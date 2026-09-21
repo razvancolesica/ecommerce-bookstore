@@ -9,7 +9,6 @@ import com.bookstore.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -20,41 +19,45 @@ public class OrderController {
 
     private final OrderService orderService;
     private final AddressRepository addressRepository;
+    private final AuthController authController;
 
     @GetMapping("/orders")
     public ResponseEntity<OrderDto.OrderPage> history(
-            @AuthenticationPrincipal User user,
+            @RequestHeader(value = "Authorization", required = false) String auth,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
+        User user = authController.resolveUser(auth);
         return ResponseEntity.ok(orderService.getHistory(user, page, size));
     }
 
     @PostMapping("/orders")
     public ResponseEntity<OrderDto.OrderResponse> place(
-            @AuthenticationPrincipal User user,
+            @RequestHeader(value = "Authorization", required = false) String auth,
             @Valid @RequestBody OrderDto.PlaceOrderRequest req) {
+        User user = authController.resolveUser(auth);
         return ResponseEntity.status(HttpStatus.CREATED).body(orderService.placeOrder(user, req));
     }
 
     @GetMapping("/orders/{id}")
     public ResponseEntity<OrderDto.OrderResponse> get(
-            @AuthenticationPrincipal User user,
+            @RequestHeader(value = "Authorization", required = false) String auth,
             @PathVariable Long id) {
+        User user = authController.resolveUser(auth);
         return ResponseEntity.ok(orderService.getById(user, id));
     }
 
     @PostMapping("/orders/{id}/cancel")
     public ResponseEntity<OrderDto.OrderResponse> cancel(
-            @AuthenticationPrincipal User user,
+            @RequestHeader(value = "Authorization", required = false) String auth,
             @PathVariable Long id) {
+        User user = authController.resolveUser(auth);
         return ResponseEntity.ok(orderService.cancelOrder(user, id));
     }
 
-    // ── Addresses ────────────────────────────────────────────────────────────
-
     @GetMapping("/addresses")
     public ResponseEntity<List<AddressDto.AddressResponse>> listAddresses(
-            @AuthenticationPrincipal User user) {
+            @RequestHeader(value = "Authorization", required = false) String auth) {
+        User user = authController.resolveUser(auth);
         return ResponseEntity.ok(
             addressRepository.findByUserId(user.getId()).stream()
                 .map(this::toAddressResponse).toList());
@@ -62,8 +65,9 @@ public class OrderController {
 
     @PostMapping("/addresses")
     public ResponseEntity<AddressDto.AddressResponse> addAddress(
-            @AuthenticationPrincipal User user,
+            @RequestHeader(value = "Authorization", required = false) String auth,
             @Valid @RequestBody AddressDto.AddressRequest req) {
+        User user = authController.resolveUser(auth);
         Address address = Address.builder()
                 .user(user)
                 .fullName(req.getFullName())

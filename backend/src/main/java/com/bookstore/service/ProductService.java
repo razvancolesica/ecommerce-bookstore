@@ -4,11 +4,14 @@ import com.bookstore.dto.ProductDto;
 import com.bookstore.entity.Product;
 import com.bookstore.exception.ApiException;
 import com.bookstore.repository.ProductRepository;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -27,8 +30,32 @@ public class ProductService {
             default           -> Sort.by("title").ascending();
         };
         Pageable pageable = PageRequest.of(page, size, s);
-        Page<Product> result = productRepository.findWithFilters(
-                categoryId, brandId, search, minPrice, maxPrice, pageable);
+
+        Specification<Product> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (categoryId != null) {
+                predicates.add(cb.equal(root.get("category").get("id"), categoryId));
+            }
+            if (brandId != null) {
+                predicates.add(cb.equal(root.get("brand").get("id"), brandId));
+            }
+            if (search != null && !search.isBlank()) {
+                String like = "%" + search.toLowerCase() + "%";
+                predicates.add(cb.or(
+                    cb.like(cb.lower(root.get("title")), like),
+                    cb.like(cb.lower(root.get("author")), like)
+                ));
+            }
+            if (minPrice != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("price"), minPrice));
+            }
+            if (maxPrice != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("price"), maxPrice));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        org.springframework.data.domain.Page<Product> result = productRepository.findAll(spec, pageable);
 
         ProductDto.Page dto = new ProductDto.Page();
         dto.setContent(result.getContent().stream().map(this::toSummary).toList());
