@@ -1,0 +1,19 @@
+# Build artifacts
+target/
+*.jar
+*.war
+*.class
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.DS_Store
+
+# Environment / secrets (never commit)
+.env
+*.env.local
+
+# Frontend build
+frontend/dist/
+frontend/node_modules/

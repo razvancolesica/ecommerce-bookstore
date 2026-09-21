@@ -1,0 +1,879 @@
+openapi: 3.0.3
+info:
+  title: eCommerce Bookstore API
+  description: |
+    REST API for the eCommerce Bookstore capstone project.
+    Built with IBM Bob (Agentic IDE) as part of the AI Specialist Cloud FullStack Capstone.
+
+    Features:
+    - User authentication (JWT)
+    - Product catalogue with categories and brands
+    - Shopping cart management
+    - Order placement, history, and cancellation
+    - AI-driven product recommendations (rule-based)
+    - Gift points redemption
+  version: 1.0.0
+  contact:
+    name: Razvan Colesica
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Auth
+    description: User registration and authentication
+  - name: Products
+    description: Product catalogue and search
+  - name: Categories
+    description: Product categories
+  - name: Brands
+    description: Book brands / publishers
+  - name: Cart
+    description: Shopping cart operations
+  - name: Orders
+    description: Order placement, history, and cancellation
+  - name: Recommendations
+    description: AI-driven product recommendations
+  - name: Gift Points
+    description: Gift point balance and redemption
+
+paths:
+
+  # ── AUTH ───────────────────────────────────────────────────────────────────
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email already in use
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Authenticate user and return JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Get current authenticated user profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── CATEGORIES ─────────────────────────────────────────────────────────────
+  /api/categories:
+    get:
+      tags: [Categories]
+      summary: List all product categories
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+
+  /api/categories/{id}:
+    get:
+      tags: [Categories]
+      summary: Get a category by ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── BRANDS ─────────────────────────────────────────────────────────────────
+  /api/brands:
+    get:
+      tags: [Brands]
+      summary: List all brands / publishers
+      responses:
+        '200':
+          description: List of brands
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Brand'
+
+  # ── PRODUCTS ───────────────────────────────────────────────────────────────
+  /api/products:
+    get:
+      tags: [Products]
+      summary: List products with optional filtering and pagination
+      parameters:
+        - name: categoryId
+          in: query
+          schema:
+            type: integer
+          description: Filter by category
+        - name: brandId
+          in: query
+          schema:
+            type: integer
+          description: Filter by brand / publisher
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Full-text search on title and author
+        - name: minPrice
+          in: query
+          schema:
+            type: number
+        - name: maxPrice
+          in: query
+          schema:
+            type: number
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [price_asc, price_desc, title_asc, newest]
+            default: title_asc
+      responses:
+        '200':
+          description: Paginated product list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+
+  /api/products/{id}:
+    get:
+      tags: [Products]
+      summary: Get product details by ID
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── CART ───────────────────────────────────────────────────────────────────
+  /api/cart:
+    get:
+      tags: [Cart]
+      summary: Get current user's cart
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Cart contents
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      tags: [Cart]
+      summary: Clear all items from the cart
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Cart cleared
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/cart/items:
+    post:
+      tags: [Cart]
+      summary: Add a product to the cart
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddToCartRequest'
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/cart/items/{itemId}:
+    put:
+      tags: [Cart]
+      summary: Update quantity of a cart item
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCartItemRequest'
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Cart]
+      summary: Remove an item from the cart
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── ORDERS ─────────────────────────────────────────────────────────────────
+  /api/orders:
+    get:
+      tags: [Orders]
+      summary: Get order history for the current user
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Paginated order history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Orders]
+      summary: Place a new order from the current cart
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrderRequest'
+      responses:
+        '201':
+          description: Order placed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/orders/{id}:
+    get:
+      tags: [Orders]
+      summary: Get order details by ID
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/orders/{id}/cancel:
+    post:
+      tags: [Orders]
+      summary: Cancel an order (only within 48 hours of placement)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          description: Order cannot be cancelled (past 48-hour window)
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ── RECOMMENDATIONS ────────────────────────────────────────────────────────
+  /api/products/{id}/related:
+    get:
+      tags: [Recommendations]
+      summary: Get related products (same category / same author)
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+      responses:
+        '200':
+          description: List of related products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductSummary'
+
+  /api/recommendations:
+    get:
+      tags: [Recommendations]
+      summary: Get personalized recommendations based on order history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 8
+      responses:
+        '200':
+          description: Recommended products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductSummary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ── GIFT POINTS ────────────────────────────────────────────────────────────
+  /api/gift-points:
+    get:
+      tags: [Gift Points]
+      summary: Get current user's gift point balance
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Gift point balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GiftPointBalance'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/addresses:
+    get:
+      tags: [Orders]
+      summary: Get saved delivery addresses for the current user
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of addresses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Address'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags: [Orders]
+      summary: Add a new delivery address
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddressRequest'
+      responses:
+        '201':
+          description: Address created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Address'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+# ── COMPONENTS ────────────────────────────────────────────────────────────────
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+
+  responses:
+    BadRequest:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid JWT token
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+
+    # Auth
+    RegisterRequest:
+      type: object
+      required: [firstName, lastName, email, password]
+      properties:
+        firstName:
+          type: string
+          example: Jane
+        lastName:
+          type: string
+          example: Doe
+        email:
+          type: string
+          format: email
+          example: jane.doe@example.com
+        password:
+          type: string
+          minLength: 6
+          example: secret123
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: JWT bearer token
+        user:
+          $ref: '#/components/schemas/UserProfile'
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        giftPoints:
+          type: integer
+
+    # Catalogue
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: Fiction
+        description:
+          type: string
+        imageUrl:
+          type: string
+
+    Brand:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: Penguin Books
+        logoUrl:
+          type: string
+
+    ProductSummary:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        author:
+          type: string
+        price:
+          type: number
+          format: double
+        coverImageUrl:
+          type: string
+        categoryId:
+          type: integer
+        categoryName:
+          type: string
+        estimatedDeliveryDays:
+          type: integer
+
+    ProductDetail:
+      allOf:
+        - $ref: '#/components/schemas/ProductSummary'
+        - type: object
+          properties:
+            description:
+              type: string
+            isbn:
+              type: string
+            publisher:
+              type: string
+            publishedDate:
+              type: string
+              format: date
+            pages:
+              type: integer
+            stockQuantity:
+              type: integer
+            brand:
+              $ref: '#/components/schemas/Brand'
+
+    ProductPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductSummary'
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        page:
+          type: integer
+        size:
+          type: integer
+
+    # Cart
+    AddToCartRequest:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: integer
+        quantity:
+          type: integer
+          minimum: 1
+
+    UpdateCartItemRequest:
+      type: object
+      required: [quantity]
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        product:
+          $ref: '#/components/schemas/ProductSummary'
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+        subtotal:
+          type: number
+
+    Cart:
+      type: object
+      properties:
+        id:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+        totalItems:
+          type: integer
+        subtotal:
+          type: number
+        discountFromPoints:
+          type: number
+        total:
+          type: number
+
+    # Orders
+    Address:
+      type: object
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        line1:
+          type: string
+        line2:
+          type: string
+        city:
+          type: string
+        postcode:
+          type: string
+        country:
+          type: string
+
+    AddressRequest:
+      type: object
+      required: [fullName, line1, city, postcode, country]
+      properties:
+        fullName:
+          type: string
+        line1:
+          type: string
+        line2:
+          type: string
+        city:
+          type: string
+        postcode:
+          type: string
+        country:
+          type: string
+
+    PlaceOrderRequest:
+      type: object
+      required: [addressId, paymentMethod]
+      properties:
+        addressId:
+          type: integer
+        paymentMethod:
+          type: string
+          enum: [CREDIT_CARD, DEBIT_CARD, GIFT_POINTS]
+        useGiftPoints:
+          type: boolean
+          default: false
+        cardNumber:
+          type: string
+          description: Last 4 digits (mock — not stored)
+        cardHolderName:
+          type: string
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        productId:
+          type: integer
+        productTitle:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+        subtotal:
+          type: number
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum: [PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED]
+        placedAt:
+          type: string
+          format: date-time
+        address:
+          $ref: '#/components/schemas/Address'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        paymentMethod:
+          type: string
+        subtotal:
+          type: number
+        discountFromPoints:
+          type: number
+        total:
+          type: number
+        cancellable:
+          type: boolean
+          description: True if within 48-hour cancellation window
+
+    OrderPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        page:
+          type: integer
+        size:
+          type: integer
+
+    # Gift Points
+    GiftPointBalance:
+      type: object
+      properties:
+        balance:
+          type: integer
+        equivalentValue:
+          type: number
+          description: Monetary value of current points (1 point = $0.01)
+
+    # Error
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string

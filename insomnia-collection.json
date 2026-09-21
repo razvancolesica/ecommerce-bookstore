@@ -1,0 +1,295 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2024-01-01T00:00:00.000Z",
+  "__export_source": "insomnia.desktop.app:v2023.5.8",
+  "resources": [
+    {
+      "_id": "wrk_bookstore",
+      "_type": "workspace",
+      "name": "eCommerce Bookstore API",
+      "description": "API test collection for the Bookstore capstone project"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_bookstore",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:8080",
+        "token": ""
+      }
+    },
+
+    {
+      "_id": "fld_auth",
+      "_type": "request_group",
+      "parentId": "wrk_bookstore",
+      "name": "Auth"
+    },
+    {
+      "_id": "req_register",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Register",
+      "method": "POST",
+      "url": "{{ base_url }}/api/auth/register",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"firstName\": \"Jane\",\n  \"lastName\": \"Doe\",\n  \"email\": \"jane.doe@example.com\",\n  \"password\": \"secret123\"\n}"
+      }
+    },
+    {
+      "_id": "req_login",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Login",
+      "method": "POST",
+      "url": "{{ base_url }}/api/auth/login",
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"jane.doe@example.com\",\n  \"password\": \"secret123\"\n}"
+      }
+    },
+    {
+      "_id": "req_me",
+      "_type": "request",
+      "parentId": "fld_auth",
+      "name": "Get Current User (me)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/auth/me",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "fld_catalogue",
+      "_type": "request_group",
+      "parentId": "wrk_bookstore",
+      "name": "Catalogue"
+    },
+    {
+      "_id": "req_categories",
+      "_type": "request",
+      "parentId": "fld_catalogue",
+      "name": "List Categories",
+      "method": "GET",
+      "url": "{{ base_url }}/api/categories"
+    },
+    {
+      "_id": "req_brands",
+      "_type": "request",
+      "parentId": "fld_catalogue",
+      "name": "List Brands",
+      "method": "GET",
+      "url": "{{ base_url }}/api/brands"
+    },
+    {
+      "_id": "req_products",
+      "_type": "request",
+      "parentId": "fld_catalogue",
+      "name": "List Products",
+      "method": "GET",
+      "url": "{{ base_url }}/api/products?page=0&size=10&sort=title_asc"
+    },
+    {
+      "_id": "req_products_filter",
+      "_type": "request",
+      "parentId": "fld_catalogue",
+      "name": "Filter Products by Category",
+      "method": "GET",
+      "url": "{{ base_url }}/api/products?categoryId=1&page=0&size=10"
+    },
+    {
+      "_id": "req_products_search",
+      "_type": "request",
+      "parentId": "fld_catalogue",
+      "name": "Search Products",
+      "method": "GET",
+      "url": "{{ base_url }}/api/products?search=gatsby"
+    },
+    {
+      "_id": "req_product_detail",
+      "_type": "request",
+      "parentId": "fld_catalogue",
+      "name": "Get Product by ID",
+      "method": "GET",
+      "url": "{{ base_url }}/api/products/1"
+    },
+    {
+      "_id": "req_related",
+      "_type": "request",
+      "parentId": "fld_catalogue",
+      "name": "Get Related Products",
+      "method": "GET",
+      "url": "{{ base_url }}/api/products/1/related?limit=4"
+    },
+    {
+      "_id": "req_recommendations",
+      "_type": "request",
+      "parentId": "fld_catalogue",
+      "name": "Get Recommendations (authenticated)",
+      "method": "GET",
+      "url": "{{ base_url }}/api/recommendations?limit=8",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "fld_cart",
+      "_type": "request_group",
+      "parentId": "wrk_bookstore",
+      "name": "Cart"
+    },
+    {
+      "_id": "req_cart_get",
+      "_type": "request",
+      "parentId": "fld_cart",
+      "name": "Get Cart",
+      "method": "GET",
+      "url": "{{ base_url }}/api/cart",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+    {
+      "_id": "req_cart_add",
+      "_type": "request",
+      "parentId": "fld_cart",
+      "name": "Add Item to Cart",
+      "method": "POST",
+      "url": "{{ base_url }}/api/cart/items",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"productId\": 1,\n  \"quantity\": 2\n}"
+      }
+    },
+    {
+      "_id": "req_cart_update",
+      "_type": "request",
+      "parentId": "fld_cart",
+      "name": "Update Cart Item Quantity",
+      "method": "PUT",
+      "url": "{{ base_url }}/api/cart/items/1",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"quantity\": 3\n}"
+      }
+    },
+    {
+      "_id": "req_cart_remove",
+      "_type": "request",
+      "parentId": "fld_cart",
+      "name": "Remove Cart Item",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/cart/items/1",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+    {
+      "_id": "req_cart_clear",
+      "_type": "request",
+      "parentId": "fld_cart",
+      "name": "Clear Cart",
+      "method": "DELETE",
+      "url": "{{ base_url }}/api/cart",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "fld_orders",
+      "_type": "request_group",
+      "parentId": "wrk_bookstore",
+      "name": "Orders"
+    },
+    {
+      "_id": "req_addresses",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "List Addresses",
+      "method": "GET",
+      "url": "{{ base_url }}/api/addresses",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+    {
+      "_id": "req_add_address",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "Add Address",
+      "method": "POST",
+      "url": "{{ base_url }}/api/addresses",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"fullName\": \"Jane Doe\",\n  \"line1\": \"123 Main Street\",\n  \"city\": \"London\",\n  \"postcode\": \"SW1A 1AA\",\n  \"country\": \"UK\"\n}"
+      }
+    },
+    {
+      "_id": "req_place_order",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "Place Order",
+      "method": "POST",
+      "url": "{{ base_url }}/api/orders",
+      "headers": [
+        { "name": "Authorization", "value": "Bearer {{ token }}" },
+        { "name": "Content-Type", "value": "application/json" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"addressId\": 1,\n  \"paymentMethod\": \"CREDIT_CARD\",\n  \"useGiftPoints\": false,\n  \"cardNumber\": \"4242\",\n  \"cardHolderName\": \"Jane Doe\"\n}"
+      }
+    },
+    {
+      "_id": "req_order_history",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "Get Order History",
+      "method": "GET",
+      "url": "{{ base_url }}/api/orders?page=0&size=10",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+    {
+      "_id": "req_order_detail",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "Get Order by ID",
+      "method": "GET",
+      "url": "{{ base_url }}/api/orders/1",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+    {
+      "_id": "req_order_cancel",
+      "_type": "request",
+      "parentId": "fld_orders",
+      "name": "Cancel Order",
+      "method": "POST",
+      "url": "{{ base_url }}/api/orders/1/cancel",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    },
+
+    {
+      "_id": "fld_giftpoints",
+      "_type": "request_group",
+      "parentId": "wrk_bookstore",
+      "name": "Gift Points"
+    },
+    {
+      "_id": "req_gift_balance",
+      "_type": "request",
+      "parentId": "fld_giftpoints",
+      "name": "Get Gift Point Balance",
+      "method": "GET",
+      "url": "{{ base_url }}/api/gift-points",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ token }}" }]
+    }
+  ]
+}
